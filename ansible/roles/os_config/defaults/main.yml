@@ -1,0 +1,3 @@
+enable_memory_optimization: True
+enable_install_packages: True
+enable_install_desktop_packages: True

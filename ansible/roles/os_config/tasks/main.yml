@@ -1,0 +1,20 @@
+- name: set timezone
+  timezone:
+    name: "{{timezone_name}}"
+  when: timezone_name is defined
+
+- name: include install-redhat.yml
+  include: install-redhat.yml
+  when: ansible_os_family == "RedHat"
+
+- name: include install-ubuntu.yml
+  include: install-ubuntu.yml
+  when: ansible_os_family == "Debian"
+
+- name: include memory_optimization.yml
+  include: memory_optimization.yml
+  when: enable_memory_optimization
+
+- name: include set-network-config.yaml
+  include: set-network-config.yaml
+  when: install_mode == "demokit"

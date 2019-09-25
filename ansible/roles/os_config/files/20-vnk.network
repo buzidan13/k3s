@@ -1,0 +1,9 @@
+[Match]
+Name=vnk0
+
+[Network]
+Address=129.0.0.100/24
+
+[Route]
+Gateway=129.0.0.1
+Metric=999999

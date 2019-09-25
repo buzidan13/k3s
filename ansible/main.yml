@@ -1,0 +1,24 @@
+---
+- hosts: localhost
+  gather_facts: true
+  become: yes
+  vars:
+    nvidia_driver_package_version: "410.104-1"
+    docker_install_compose: False
+    docker_compose_version: "1.24.0"
+    nvidia_driver_skip_reboot: yes
+    airgap: False
+  pre_tasks:
+    - name: check if nvidia gpu exist in lspci
+      shell: "lspci | grep ' VGA '"
+      register: nvidia_device_lspci
+      ignore_errors: true
+    - name: check if nvidia gpu exist in lshw
+      shell: "lshw -C display"
+      register: nvidia_device_lshw
+      ignore_errors: true
+  roles:
+    - { role: os_config, tags: ["os"] }
+    - { role: docker, tags: ["docker"] }
+    - { role: nvidia-driver, tags: ["nvidia-driver"], when: "(((nvidia_device_lspci is defined) and (nvidia_device_lspci.stdout.find('NVIDIA') != -1)) or ((nvidia_device_lshw is defined) and (nvidia_device_lshw.stdout.find('NVIDIA') != -1)))" }
+    - { role: nvidia-docker, tags: ["nvidia-docker"], when: "(((nvidia_device_lspci is defined) and (nvidia_device_lspci.stdout.find('NVIDIA') != -1)) or ((nvidia_device_lshw is defined) and (nvidia_device_lshw.stdout.find('NVIDIA') != -1)))" }

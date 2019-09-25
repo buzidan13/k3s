@@ -1,0 +1,203 @@
+- name: update nofile soft
+  pam_limits:
+    domain: root
+    limit_type: soft
+    limit_item: nofile
+    value: 200000
+
+- name: update nofile hard
+  pam_limits:
+    domain: root
+    limit_type: hard
+    limit_item: nofile
+    value: 200000
+
+- name: update nproc soft
+  pam_limits:
+    domain: root
+    limit_type: soft
+    limit_item: nproc
+    value: 200000
+
+- name: update nofile hard root
+  pam_limits:
+    domain: root
+    limit_type: hard
+    limit_item: nproc
+    value: 1000000
+
+
+- name: update sysctl vm.swappiness
+  sysctl:
+    name: vm.swappiness
+    value: 0
+    state: present
+
+- name: update sysctl vm.drop_caches
+  sysctl:
+    name: vm.drop_caches
+    value: 3
+    state: present
+
+- name: update sysctl fs.file-max
+  sysctl:
+    name: fs.file-max
+    value: 200000
+    state: present
+
+# Memsql best practices
+
+- name: update sysctl vm.max_map_count
+  sysctl:
+    name: vm.max_map_count
+    value: 1000000000
+    state: present
+
+- name: update sysctl vm.min_free_kbytes
+  sysctl:
+    name: vm.min_free_kbytes
+    value: "{{ ((ansible_memory_mb.real.total | int) * 1024 / 100 ) | round | int | abs }}"
+    state: present
+
+- name: disable transparent_hugepage on run time
+  shell: "{{item}}"
+  with_items:
+    - 'echo never > /sys/kernel/mm/transparent_hugepage/enabled'
+    - 'echo never > /sys/kernel/mm/transparent_hugepage/defrag'
+    - 'echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag'
+  when: ansible_os_family == 'Debian'
+
+- name: disable transparent_hugepage on run time
+  shell: "{{item}}"
+  with_items:
+    - 'echo never > /sys/kernel/mm/transparent_hugepage/enabled'
+    - 'echo never > /sys/kernel/mm/transparent_hugepage/defrag'
+    - 'echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag'
+  when: ansible_os_family == "RedHat"
+
+# - name: Disable THP support scripts added to rc.local
+#   lineinfile:
+#     path: /etc/rc.local
+#     create: yes
+#     mode: 0644
+#     line: |
+#       echo never > /sys/kernel/mm/transparent_hugepage/enabled
+#       echo never > /sys/kernel/mm/transparent_hugepage/defrag
+#       echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag
+#   when: ansible_os_family == 'Debian'
+
+# - name: Enable rc-local enabled
+#   service:
+#     name: rc-local
+#     enabled: yes
+#   when: ansible_os_family == 'Debian'
+
+# - name: Disable THP support scripts added to rc.local
+#   lineinfile:
+#     path: /etc/default/grub
+#     line: GRUB_CMDLINE_LINUX_DEFAULT="transparent_hugepage=never"
+#     state: present
+#     regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+#   register: 
+#   notify: Run update-grub
+  #when: ansible_os_family == 'Debian'
+
+
+
+
+- name: create systemd service ubuntu to Disable Transparent Huge Pages (THP)
+  copy:
+    src: "ubuntu-disable-thp.service"
+    dest: "/etc/systemd/system/disable-thp.service"
+    mode: 0664
+  when: ansible_os_family == "Debian" or ansible_distribution == 'CentOS'
+
+- name: create systemd service redhat to Disable Transparent Huge Pages (THP)
+  copy:
+    src: "redhat-disable-thp.service"
+    dest: "/etc/systemd/system/disable-thp.service"
+    mode: 0664
+  when: ansible_distribution == "RedHat"
+
+
+- name: "enable service disable-thp.service"
+  systemd:
+    name: "disable-thp"
+    enabled: "yes"
+    #state: "started"
+    daemon_reload: yes
+
+- name: update sysctl vm.nr_hugepages
+  sysctl:
+    name: vm.nr_hugepages
+    value: 0
+    state: present
+
+
+- name: update nofile hard 1000
+  pam_limits:
+    domain: '1000'
+    limit_type: hard
+    limit_item: nofile
+    value: '1000000'
+
+- name: update nofile hard 1000
+  pam_limits:
+    domain: '@1000'
+    limit_type: hard
+    limit_item: nofile
+    value: '1000000'
+
+- name: update nofile hard 1000
+  pam_limits:
+    domain: '1000'
+    limit_type: soft
+    limit_item: nofile
+    value: '1000000'
+
+- name: update nofile hard 1000
+  pam_limits:
+    domain: '@1000'
+    limit_type: soft
+    limit_item: nofile
+    value: '1000000'    
+
+
+- name: update nproc soft
+  pam_limits:
+    domain: '1000'
+    limit_type: hard
+    limit_item: nproc
+    value: '128000'
+
+- name: update nproc soft
+  pam_limits:
+    domain: '@1000'
+    limit_type: hard
+    limit_item: nproc
+    value: '128000'
+
+- name: update nproc soft
+  pam_limits:
+    domain: '1000'
+    limit_type: soft
+    limit_item: nproc
+    value: '128000'
+
+- name: update nproc soft
+  pam_limits:
+    domain: '@1000'
+    limit_type: soft
+    limit_item: nproc
+    value: '128000'
+    
+- name: Optimal On-Premise Columnstore Performance
+  shell: |
+    echo 0 > /sys/block/{{item}}/queue/add_random &&
+    echo 0 > /sys/block/{{item}}/queue/add_random &&
+    echo 1 > /sys/block/{{item}}/queue/rq_affinity &&
+    echo none > /sys/block/{{item}}/queue/scheduler &&
+    echo 1023 > /sys/block/{{item}}/queue/nr_requests
+  with_items: "{{ hostvars[inventory_hostname]['ansible_devices'].keys() }}"
+  ignore_errors: true
+  when: (hostvars[inventory_hostname]["ansible_devices"].keys() is defined) and (item | search("nvme"))

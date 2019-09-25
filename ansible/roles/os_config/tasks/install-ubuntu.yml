@@ -1,0 +1,69 @@
+- name: ensure host apps installed ubuntu/debian
+  apt:
+     name:
+      - curl
+      - htop
+      - telnet
+      - vim
+      - net-tools
+      - ncdu
+      #- ffmpeg
+      - iftop
+      - iotop
+      - openssh-server
+      - ntp     
+     update_cache: yes
+     install_recommends: no
+     state: present
+     cache_valid_time: 3600
+  register: apt_host_apps
+  retries: 5
+  delay: 120
+  until: apt_host_apps is success
+  when: enable_install_packages
+
+# - name: check if host session /usr/bin/gnome-session exist (OS with GUI Desktop)
+#   #shell: "ls /usr/bin/gnome-session"
+#   stat:
+#     path: /usr/bin/gnome-session
+#   register: host_sessions
+#   when: enable_install_desktop_packages
+
+
+# - name: install Desktop packages (OS with GUI) - step 1
+#   apt:
+#      name:
+#       - ubuntu-gnome-desktop
+#       - ubuntu-desktop     
+#       - xorg   
+#      update_cache: yes
+#      install_recommends: no
+#      state: present
+#      cache_valid_time: 3600
+#   when: 
+#     - enable_install_desktop_packages
+#     - ansible_distribution_major_version == "18"
+#     - host_sessions is defined and host_sessions.stat.exists == True
+#   register: apt_host_desktop_apps
+#   retries: 5
+#   delay: 120
+#   until: apt_host_desktop_apps is success
+
+# - name: install Desktop packages (OS with GUI) - step 2
+#   apt:
+#      name:
+#       - xserver-xorg-input-all
+#       - xserver-xorg-core
+#       - vlc      
+#      update_cache: yes
+#      install_recommends: no
+#      state: present
+#      cache_valid_time: 3600
+#   when: 
+#     - enable_install_desktop_packages
+#     - ansible_distribution_major_version == "18"
+#     - host_sessions is defined and host_sessions.stat.exists == True
+#   register: apt_host_desktop_apps
+#   retries: 5
+#   delay: 120
+#   until: apt_host_desktop_apps is success

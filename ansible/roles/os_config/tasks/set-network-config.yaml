@@ -1,0 +1,27 @@
+- name: Add Xhost permissions
+  copy:
+    src: xhost.sh
+    dest: /etc/profile.d/xhost.sh
+
+- name: Configure virtual NIC for k3s
+  copy:
+    src: 10-vnk.netdev
+    dest: /lib/systemd/network/10-vnk.netdev
+
+- name: Configure virtual NIC for k3s
+  copy:
+    src: 20-vnk.network
+    dest: /lib/systemd/network/20-vnk.network
+  notify:
+    - restart systemd-networkd
+
+- name: Configure virtual NIC for k3s
+  copy:
+    src: k3s-restarter.sh
+    dest: /etc/NetworkManager/dispatcher.d/k3s-restarter.sh
+    owner: root
+    group: root
+    mode: 0700
+  notify:
+    - reload services
+    - restart NetworkManager dispatcher
